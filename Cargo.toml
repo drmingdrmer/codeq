@@ -1,0 +1,9 @@
+[package]
+name = "codek"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+byteorder = "1.5.0"
+crc32fast = "1.4.2"
+anyhow = "1.0.89"
