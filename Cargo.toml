@@ -1,5 +1,5 @@
 [package]
-name = "codek"
+name = "codeq"
 version = "0.2.0"
 edition = "2021"
 
@@ -8,11 +8,11 @@ authors = [
 ]
 categories = ["algorithms", "data-structures"]
 description = "Codec trait"
-documentation = "https://docs.rs/codek"
-homepage = "https://github.com/drmingdrmer/codek"
+documentation = "https://docs.rs/codeq"
+homepage = "https://github.com/drmingdrmer/codeq"
 keywords = ["encode", "decode", "codec"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/drmingdrmer/codek"
+repository = "https://github.com/drmingdrmer/codeq"
 
 
 [dependencies]

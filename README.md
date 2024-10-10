@@ -1,2 +1,2 @@
-# codek
+# codeq
 codec trait
