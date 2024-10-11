@@ -9,5 +9,7 @@ pub mod testing;
 pub use checksum_reader::ChecksumReader;
 pub use checksum_writer::ChecksumWriter;
 pub use codec::Codec;
+pub use codec::Decode;
+pub use codec::Encode;
 pub use fixed_size::FixedSize;
 pub use with_checksum::WithChecksum;

@@ -3,31 +3,32 @@ use std::io;
 use byteorder::ReadBytesExt;
 use byteorder::WriteBytesExt;
 
-use crate::fixed_size::FixedSize;
+use crate::codec::Decode;
+use crate::codec::Encode;
+use crate::FixedSize;
 
-pub trait Codec: Sized {
-    fn encode<W: io::Write>(&self, w: W) -> Result<usize, io::Error>;
-    fn decode<R: io::Read>(r: R) -> Result<Self, io::Error>;
-}
-
-impl Codec for u64 {
+impl Encode for u64 {
     fn encode<W: io::Write>(&self, mut w: W) -> Result<usize, io::Error> {
         w.write_u64::<byteorder::BigEndian>(*self)?;
         Ok(Self::encoded_size())
     }
+}
 
+impl Decode for u64 {
     fn decode<R: io::Read>(mut r: R) -> Result<Self, io::Error> {
         let v = r.read_u64::<byteorder::BigEndian>()?;
         Ok(v)
     }
 }
 
-impl Codec for u32 {
+impl Encode for u32 {
     fn encode<W: io::Write>(&self, mut w: W) -> Result<usize, io::Error> {
         w.write_u32::<byteorder::BigEndian>(*self)?;
         Ok(Self::encoded_size())
     }
+}
 
+impl Decode for u32 {
     fn decode<R: io::Read>(mut r: R) -> Result<Self, io::Error> {
         let v = r.read_u32::<byteorder::BigEndian>()?;
         Ok(v)

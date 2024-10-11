@@ -4,7 +4,8 @@ use std::io::Write;
 
 use crate::checksum_reader::ChecksumReader;
 use crate::checksum_writer::ChecksumWriter;
-use crate::codec::Codec;
+use crate::codec::Decode;
+use crate::codec::Encode;
 use crate::fixed_size::FixedSize;
 
 /// A encoding helper that appends a checksum to the end of the encoded data.
@@ -31,8 +32,8 @@ impl<T: FixedSize> FixedSize for WithChecksum<T> {
     }
 }
 
-impl<T> Codec for WithChecksum<T>
-where T: Codec
+impl<T> Encode for WithChecksum<T>
+where T: Encode
 {
     fn encode<W: Write>(&self, mut w: W) -> Result<usize, Error> {
         let mut n = 0;
@@ -43,7 +44,11 @@ where T: Codec
 
         Ok(n)
     }
+}
 
+impl<T> Decode for WithChecksum<T>
+where T: Decode
+{
     fn decode<R: Read>(r: R) -> Result<Self, Error> {
         let mut cr = ChecksumReader::new(r);
 
@@ -58,7 +63,7 @@ where T: Codec
 
 #[cfg(test)]
 mod tests {
-    use crate::codec::Codec;
+    use crate::codec::Encode;
     use crate::testing::test_codec;
     use crate::with_checksum::WithChecksum;
 
