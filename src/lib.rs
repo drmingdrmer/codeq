@@ -1,3 +1,5 @@
+extern crate core;
+
 mod checksum_reader;
 mod checksum_writer;
 mod codec;

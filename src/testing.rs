@@ -1,8 +1,10 @@
 use std::any::type_name;
 use std::fmt::Debug;
 use std::io;
+use std::mem::size_of;
 
 use crate::codec::Codec;
+use crate::FixedSize;
 
 /// Test decoding from correct data and corrupted data.
 pub fn test_codec<D: Codec + PartialEq + Debug>(
@@ -45,6 +47,21 @@ pub fn test_codec<D: Codec + PartialEq + Debug>(
             correct_str
         );
     }
+
+    Ok(())
+}
+
+pub fn test_int_coded<T: Codec + FixedSize + PartialEq + Debug>(v: T) -> anyhow::Result<()> {
+    let size = size_of::<T>();
+
+    assert_eq!(T::encoded_size(), size);
+
+    let mut buf = Vec::new();
+    let n = v.encode(&mut buf)?;
+    assert_eq!(n, buf.len());
+
+    let b = T::decode(&mut buf.as_slice())?;
+    assert_eq!(v, b);
 
     Ok(())
 }
