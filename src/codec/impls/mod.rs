@@ -1,3 +1,4 @@
+mod option_impls;
 mod string_impl;
 mod tuple_2_impl;
 mod u32_impl;

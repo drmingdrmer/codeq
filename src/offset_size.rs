@@ -1,3 +1,9 @@
+mod offset;
+mod size;
+
+pub use offset::Offset;
+pub use size::Size;
+
 pub trait OffsetSize {
     fn offset(&self) -> u64;
     fn size(&self) -> u64;

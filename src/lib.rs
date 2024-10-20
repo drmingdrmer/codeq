@@ -16,6 +16,8 @@ pub use codec::Codec;
 pub use codec::Decode;
 pub use codec::Encode;
 pub use fixed_size::FixedSize;
+pub use offset_size::Offset;
 pub use offset_size::OffsetSize;
+pub use offset_size::Size;
 pub use segment::Segment;
 pub use with_checksum::WithChecksum;

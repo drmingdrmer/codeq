@@ -1,6 +1,5 @@
 mod decode;
 mod encode;
-mod generic_impls;
 mod impls;
 
 pub use decode::Decode;
