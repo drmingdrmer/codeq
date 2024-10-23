@@ -1,6 +1,7 @@
 use std::io::Error;
 use std::io::Read;
 use std::io::Write;
+use std::marker::PhantomData;
 
 use byteorder::BigEndian;
 use byteorder::ReadBytesExt;
@@ -18,22 +19,28 @@ use crate::OffsetSize;
 #[derive(Default)]
 #[derive(PartialEq, Eq)]
 #[derive(serde::Serialize, serde::Deserialize)]
-pub struct Segment {
+pub struct Segment<T = ()> {
     /// Offset of the segment.
     pub offset: u64,
 
     /// Size of the segment.
     pub size: u64,
+
+    _p: PhantomData<T>,
 }
 
-impl Segment {
+impl<T> Segment<T> {
     /// Create a new segment.
     pub fn new(offset: u64, size: u64) -> Self {
-        Self { offset, size }
+        Self {
+            offset,
+            size,
+            _p: Default::default(),
+        }
     }
 }
 
-impl OffsetSize for Segment {
+impl<T> OffsetSize for Segment<T> {
     fn offset(&self) -> u64 {
         self.offset
     }
@@ -77,7 +84,11 @@ impl Decode for Segment {
 
         cr.verify_checksum(|| "Segment::decode()")?;
 
-        Ok(Self { offset, size })
+        Ok(Self {
+            offset,
+            size,
+            _p: Default::default(),
+        })
     }
 }
 
@@ -91,6 +102,7 @@ mod tests {
         let s = Segment {
             offset: 5,
             size: 10,
+            _p: Default::default(),
         };
 
         let b = vec![
