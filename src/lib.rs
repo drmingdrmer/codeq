@@ -8,6 +8,7 @@ mod offset_size;
 mod segment;
 mod with_checksum;
 
+pub mod error_context_ext;
 pub mod testing;
 
 pub use checksum_reader::ChecksumReader;
