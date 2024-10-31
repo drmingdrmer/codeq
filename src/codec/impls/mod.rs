@@ -1,3 +1,4 @@
+mod bool_impl;
 mod option_impls;
 mod string_impl;
 mod tuple_2_impl;

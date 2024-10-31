@@ -24,6 +24,8 @@ impl Decode for () {
 
 #[cfg(test)]
 mod tests {
+    use std::io;
+
     use crate::Decode;
     use crate::Encode;
     use crate::FixedSize;
