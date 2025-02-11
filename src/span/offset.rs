@@ -7,7 +7,7 @@ use std::ops::SubAssign;
 use derive_more::Display;
 use derive_more::From;
 
-use crate::offset_size::Size;
+use crate::span::Size;
 
 #[derive(Debug, Clone, Copy, Default)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
@@ -63,7 +63,7 @@ impl Deref for Offset {
 #[cfg(test)]
 mod tests {
     use super::Offset;
-    use crate::offset_size::Size;
+    use crate::span::Size;
 
     #[test]
     fn test_display() {
