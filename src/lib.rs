@@ -21,8 +21,10 @@ pub use codec::Encode;
 pub use fixed_size::FixedSize;
 pub use offset_reader::OffsetReader;
 pub use offset_size::Offset;
-pub use offset_size::OffsetSize;
 pub use offset_size::Size;
+pub use offset_size::Span;
+// Backward compatibility
+pub use offset_size::Span as OffsetSize;
 pub use offset_writer::OffsetWriter;
 pub use segment::Segment;
 pub use with_checksum::WithChecksum;

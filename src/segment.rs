@@ -12,7 +12,7 @@ use crate::ChecksumWriter;
 use crate::Decode;
 use crate::Encode;
 use crate::FixedSize;
-use crate::OffsetSize;
+use crate::Span;
 
 /// Describe a segment with offset and size.
 #[derive(Debug, Clone, Copy)]
@@ -40,7 +40,7 @@ impl<T> Segment<T> {
     }
 }
 
-impl<T> OffsetSize for Segment<T> {
+impl<T> Span for Segment<T> {
     fn offset(&self) -> u64 {
         self.offset
     }
