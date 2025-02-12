@@ -7,6 +7,26 @@ use derive_more::From;
 use derive_more::Sub;
 use derive_more::SubAssign;
 
+/// Represents a size in bytes.
+///
+/// This type wraps a `u64` to provide type safety and prevent accidental mixing
+/// of sizes with other numeric values. It supports basic arithmetic operations
+/// and comparison.
+///
+/// # Examples
+/// ```rust
+/// use codeq::Size;
+///
+/// let size = Size(1024);
+/// let doubled = size + size;
+/// assert_eq!(doubled, Size(2048));
+///
+/// // Sizes can be compared
+/// assert!(Size(100) > Size(50));
+///
+/// // Can be created from u64
+/// let size = Size::from(2048u64);
+/// ```
 #[derive(Debug, Clone, Copy, Default)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 #[derive(From)]
