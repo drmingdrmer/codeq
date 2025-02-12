@@ -5,6 +5,10 @@ pub use offset::Offset;
 pub use size::Size;
 
 /// A trait for types that span a range with an offset and size
+///
+/// This trait is implemented by types that represent a contiguous range of data
+/// with a starting offset and a size. It provides methods to access the start,
+/// end, and size of the span.
 pub trait Span {
     /// Returns the starting offset of the span
     fn offset(&self) -> Offset;
