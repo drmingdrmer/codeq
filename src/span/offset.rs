@@ -9,6 +9,31 @@ use derive_more::From;
 
 use crate::span::Size;
 
+/// Represents a byte position/offset in a file or buffer.
+///
+/// This type wraps a `u64` to provide type safety and prevent accidental mixing
+/// of offsets with other numeric values. It supports:
+/// - Addition and subtraction with `Size`
+/// - Comparison with other offsets
+/// - Conversion from `u64`
+///
+/// # Examples
+/// ```rust
+/// use codeq::{Offset, Size};
+///
+/// let offset = Offset(1000);
+///
+/// // Add or subtract sizes
+/// let advanced = offset + Size(50);
+/// assert_eq!(advanced, Offset(1050));
+///
+/// // Calculate distance between offsets
+/// let size: Size = Offset(100) - Offset(50);
+/// assert_eq!(size, Size(50));
+///
+/// // Offsets can be compared
+/// assert!(Offset(100) > Offset(50));
+/// ```
 #[derive(Debug, Clone, Copy, Default)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 #[derive(From)]
