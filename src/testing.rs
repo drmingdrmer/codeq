@@ -1,4 +1,5 @@
-/// Test utilities for codec implementations.
+//! Test utilities for codec implementations.
+
 use std::any::type_name;
 use std::fmt::Debug;
 use std::io;

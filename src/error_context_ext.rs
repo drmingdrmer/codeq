@@ -1,3 +1,5 @@
+//! Add context to error messages.
+
 use std::fmt::Display;
 use std::io;
 

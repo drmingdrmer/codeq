@@ -1,6 +1,6 @@
 use std::io;
 
-/// A trait for types that can be decoded from an [`io::Read`] stream.
+/// A trait that can be decoded from an [`io::Read`] stream.
 ///
 /// Implementing this trait allows types to be decoded from an [`io::Read`] stream,
 /// which is useful for reading data from various sources like files, buffers, and streams.
