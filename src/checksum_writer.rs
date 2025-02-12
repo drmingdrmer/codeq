@@ -4,7 +4,23 @@ use byteorder::BigEndian;
 use byteorder::WriteBytesExt;
 use crc32fast::Hasher;
 
-/// A writer that calculates the crc32 checksum of the data written to it.
+/// A writer that calculates CRC32 checksum while writing data.
+///
+/// This writer wraps any type implementing [`io::Write`] and transparently calculates
+/// a CRC32 checksum of all data written through it. The checksum can be either:
+/// - Retrieved using `finalize_checksum()`
+/// - Written to the underlying writer using `write_checksum()`
+///
+/// Example:
+/// ```rust
+/// # use std::io::Write;
+/// use codeq::ChecksumWriter;
+///
+/// let mut writer = ChecksumWriter::new(Vec::new());
+/// writer.write_all(b"hello").unwrap();
+/// let checksum = writer.finalize_checksum();
+/// assert_eq!(checksum, crc32fast::hash(b"hello"));
+/// ```
 pub struct ChecksumWriter<W> {
     hasher: Hasher,
     inner: W,
@@ -13,6 +29,7 @@ pub struct ChecksumWriter<W> {
 impl<W> ChecksumWriter<W>
 where W: io::Write
 {
+    /// Create a new [`ChecksumWriter`] that wraps the provided writer.
     pub fn new(inner: W) -> Self {
         Self {
             hasher: Hasher::new(),
@@ -30,6 +47,8 @@ where W: io::Write
 
     /// Append the finalized crc32 checksum in the least significant 32 bits of a `u64` to the its
     /// inner writer, in BigEndian.
+    ///
+    /// Returns the number of bytes written.
     pub fn write_checksum(self) -> io::Result<usize> {
         let mut w = self.inner;
         let crc = self.hasher.finalize();
