@@ -8,7 +8,29 @@ use crate::codec::Decode;
 use crate::codec::Encode;
 use crate::fixed_size::FixedSize;
 
-/// A encoding helper that appends a checksum to the end of the encoded data.
+/// A wrapper that appends a CRC32C checksum to the encoded data.
+///
+/// An 8-byte checksum is appended to the end of the encoded data.
+/// - When encoding, the checksum is appended to the data after the inner `T` is encoded.
+/// - When decoding, the checksum is verified against the decoded data after the inner `T` is
+///   decoded, and an error is returned if they do not match.
+///
+/// Example:
+/// ```rust
+/// # use codeq::{Encode, WithChecksum};
+///
+/// let wc = WithChecksum::<u64>::new(5);
+/// let mut b = Vec::new();
+/// let n = wc.encode(&mut b).unwrap();
+/// assert_eq!(n, 16);
+/// assert_eq!(
+///     vec![
+///         0, 0, 0, 0, 0, 0, 0, 5, // data
+///         0, 0, 0, 0, 21, 72, 43, 230, // checksum
+///     ],
+///     b
+/// );
+/// ```
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(PartialEq, Eq)]
@@ -17,10 +39,12 @@ pub struct WithChecksum<T> {
 }
 
 impl<T> WithChecksum<T> {
+    /// Creates a new wrapper around the given data.
     pub fn new(data: T) -> Self {
         Self { data }
     }
 
+    /// Unwraps and returns the inner data
     pub fn into_inner(self) -> T {
         self.data
     }
