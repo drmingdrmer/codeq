@@ -5,7 +5,12 @@ use byteorder::BigEndian;
 use byteorder::ReadBytesExt;
 use crc32fast::Hasher;
 
-/// A reader that calculates the crc32 checksum of the data read from it.
+/// A reader wrapper that calculates CRC32 checksum while reading data.
+///
+/// This reader wraps any type implementing `io::Read` and transparently calculates
+/// a CRC32 checksum of all data read through it. The checksum can be either:
+/// - Retrieved using [`finalize_checksum()`](Self::finalize_checksum)
+/// - Verified against an expected value using [`verify_checksum()`](Self::verify_checksum)
 pub struct ChecksumReader<R> {
     hasher: Hasher,
     inner: R,
@@ -14,6 +19,7 @@ pub struct ChecksumReader<R> {
 impl<R> ChecksumReader<R>
 where R: io::Read
 {
+    /// Creates a new `ChecksumReader` wrapping the provided reader.
     pub fn new(inner: R) -> Self {
         Self {
             hasher: Hasher::new(),
@@ -21,16 +27,22 @@ where R: io::Read
         }
     }
 
-    /// Finalize the crc32 checksum and consume `self`.
+    /// Consumes the reader and returns the calculated CRC32 checksum.
     ///
-    /// Return the checksum of all read data.
+    /// The returned value is the CRC32 checksum of all data read through this reader.
     #[allow(dead_code)]
     pub fn finalize_checksum(self) -> u32 {
         self.hasher.finalize()
     }
 
-    /// Read the crc32 checksum from the least significant 32 bits of a `u64` in BigEndian,
-    /// and compare it with the calculated checksum.
+    /// Verifies the calculated checksum against an expected value stored in the stream.
+    ///
+    /// Reads another 8-byte value from the underlying reader and compares
+    /// its least significant 32 bits with the calculated checksum. The `context` closure
+    /// is called to provide additional context in case of checksum mismatch.
+    ///
+    /// # Errors
+    /// Returns [`io::Error`] with [`io::ErrorKind::InvalidData`] kind if checksums don't match.
     pub fn verify_checksum<D: fmt::Display>(self, context: impl Fn() -> D) -> io::Result<()> {
         let mut r = self.inner;
         let actual = self.hasher.finalize() as u64;
