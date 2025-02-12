@@ -1,9 +1,28 @@
-//! A binary codec library optimized for storage and networking.
+//! A fully customized encode/decode library.
 //!
-//! This crate provides traits and implementations for encoding and decoding data
-//! in a binary format, with special focus on:
-//! - Data integrity through CRC32 checksums
-//! - Efficient handling of file/buffer offsets and sizes
+//! with special focus on:
+//! - Data integrity through checksums.
+//! - Application defined backward compatibility.
+//!
+//! # Differences from serde
+//!
+//! While serde is a general-purpose serialization framework, this crate is specialized for:
+//!
+//! 1. **Single Format**: Only supports a single, application defined binary format.
+//! 1. **Data Integrity**: Built-in checksum support for detecting corruption.
+//! 1. **Simple Implementation**: Direct encoding/decoding without intermediate formats.
+//! 1. **Backward Compatibility**: Application defined backward compatibility.
+//!
+//! Choose **this crate** when you need:
+//! - Efficient customized binary serialization with checksums.
+//! - Direct control over the binary format.
+//! - Simple implementation without format abstraction.
+//! - Data format evolves over time.
+//!
+//! Use **serde** when you need:
+//! - Multiple format support (JSON, YAML, etc.)
+//! - Derive macros for automatic implementation
+//! - Automatically generated code for complex data structure serialization
 //!
 //! # Core Traits
 //!
@@ -68,27 +87,6 @@
 //! let decoded = Record::decode(&mut buf.as_slice()).unwrap();
 //! assert_eq!(record, decoded);
 //! ```
-//!
-//! # Differences from serde
-//!
-//! While serde is a general-purpose serialization framework, this crate is specialized for:
-//!
-//! 1. **Single Format**: Only supports a single, efficient binary format
-//! 1. **Data Integrity**: Built-in checksum support for detecting corruption
-//! 1. **File Operations**: First-class support for file offsets and regions
-//! 1. **Simple Implementation**: Direct encoding/decoding without intermediate formats
-//!
-//! Choose this crate when you need:
-//! - Efficient binary serialization with checksums
-//! - Direct control over the binary format
-//! - File/buffer position tracking
-//! - Simple implementation without format abstraction
-//!
-//! Use serde when you need:
-//! - Multiple format support (JSON, YAML, etc.)
-//! - Derive macros for automatic implementation
-//! - Complex data structure serialization
-//! - Format-agnostic code
 //!
 //! [`Codec`]: crate::Codec
 //! [`Encode`]: crate::Encode
