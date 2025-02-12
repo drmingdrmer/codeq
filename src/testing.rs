@@ -1,3 +1,4 @@
+/// Test utilities for codec implementations.
 use std::any::type_name;
 use std::fmt::Debug;
 use std::io;
@@ -6,7 +7,19 @@ use std::mem::size_of;
 use crate::codec::Codec;
 use crate::FixedSize;
 
-/// Test decoding from correct data and corrupted data.
+/// Comprehensively tests a codec implementation with both valid and corrupted data.
+///
+/// This function performs several checks:
+/// 1. Encodes the value and verifies it matches the expected bytes
+/// 2. Decodes the encoded bytes and verifies it matches the original value
+/// 3. Tests error handling by corrupting each byte and ensuring decode fails
+///
+/// # Arguments
+/// * `encoded_bytes` - The expected encoded representation
+/// * `v` - The value to test encoding/decoding
+///
+/// # Returns
+/// `Ok(())` if all tests pass, `io::Error` if any encoding/decoding operation fails
 pub fn test_codec<D: Codec + PartialEq + Debug>(
     encoded_bytes: &[u8],
     v: &D,
@@ -51,6 +64,18 @@ pub fn test_codec<D: Codec + PartialEq + Debug>(
     Ok(())
 }
 
+/// Tests integer codec implementations for fixed-size types.
+///
+/// Verifies that:
+/// 1. The encoded size matches the type's size in memory
+/// 2. The value can be encoded and decoded correctly
+/// 3. The encoded length matches the expected size
+///
+/// # Arguments
+/// * `v` - The integer value to test
+///
+/// # Returns
+/// `Ok(())` if all tests pass, or an error if any check fails
 pub fn test_int_coded<T: Codec + FixedSize + PartialEq + Debug>(v: T) -> anyhow::Result<()> {
     let size = size_of::<T>();
 
