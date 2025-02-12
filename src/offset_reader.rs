@@ -1,15 +1,37 @@
 use std::io;
 
+/// A reader that tracks the number of bytes read.
+///
+/// This reader wraps any type implementing [`io::Read`] and transparently tracks
+/// the number of bytes read through it. The current offset can be retrieved using
+/// the [`offset()`](Self::offset) method.
+///
+/// Example:
+/// ```rust
+/// # use std::io::Read;
+/// # use codeq::OffsetReader;
+///
+/// let data = b"hello";
+/// let mut reader = OffsetReader::new(data.as_ref());
+/// let mut buf = [0; 3];
+/// reader.read_exact(&mut buf).unwrap();
+/// assert_eq!(reader.offset(), 3);
+/// ```
 pub struct OffsetReader<R> {
     inner: R,
     offset: usize,
 }
 
 impl<R: io::Read> OffsetReader<R> {
+    /// Creates a new `OffsetReader` wrapping the provided reader.
     pub fn new(inner: R) -> Self {
         Self { inner, offset: 0 }
     }
 
+    /// Returns the current offset of the reader.
+    ///
+    /// # Returns
+    /// The current offset in bytes
     pub fn offset(&self) -> usize {
         self.offset
     }
