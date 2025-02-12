@@ -1,3 +1,7 @@
+//! Implementations of the [`Encode`] and [`Decode`] traits for various types.
+//!
+//! [`Encode`]: crate::Encode
+//! [`Decode`]: crate::Decode
 mod bool_impl;
 mod option_impls;
 mod string_impl;
