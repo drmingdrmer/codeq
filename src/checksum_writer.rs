@@ -1,8 +1,10 @@
+use std::hash::Hasher;
 use std::io;
 
 use byteorder::BigEndian;
 use byteorder::WriteBytesExt;
-use crc32fast::Hasher;
+
+use crate::config::Config;
 
 /// A writer that calculates CRC32 checksum while writing data.
 ///
@@ -12,27 +14,33 @@ use crc32fast::Hasher;
 /// - Written to the underlying writer using `write_checksum()`
 ///
 /// Example:
-/// ```rust
+#[cfg_attr(not(feature = "crc32fast"), doc = "```ignore")]
+#[cfg_attr(feature = "crc32fast", doc = "```rust")]
 /// # use std::io::Write;
 /// use codeq::ChecksumWriter;
+/// use codeq::config::Crc32fast;
 ///
-/// let mut writer = ChecksumWriter::new(Vec::new());
+/// let mut writer = ChecksumWriter::<Crc32fast,_>::new(Vec::new());
 /// writer.write_all(b"hello").unwrap();
 /// let checksum = writer.finalize_checksum();
-/// assert_eq!(checksum, crc32fast::hash(b"hello"));
+/// assert_eq!(checksum, crc32fast::hash(b"hello") as u64);
 /// ```
-pub struct ChecksumWriter<W> {
-    hasher: Hasher,
+pub struct ChecksumWriter<C, W>
+where C: Config
+{
+    hasher: C::Hasher,
     inner: W,
 }
 
-impl<W> ChecksumWriter<W>
-where W: io::Write
+impl<C, W> ChecksumWriter<C, W>
+where
+    C: Config,
+    W: io::Write,
 {
     /// Create a new [`ChecksumWriter`] that wraps the provided writer.
     pub fn new(inner: W) -> Self {
         Self {
-            hasher: Hasher::new(),
+            hasher: Default::default(),
             inner,
         }
     }
@@ -41,8 +49,8 @@ where W: io::Write
     ///
     /// Return the checksum of all written data.
     #[allow(dead_code)]
-    pub fn finalize_checksum(self) -> u32 {
-        self.hasher.finalize()
+    pub fn finalize_checksum(self) -> u64 {
+        self.hasher.finish()
     }
 
     /// Append the finalized crc32 checksum in the least significant 32 bits of a `u64` to the its
@@ -51,17 +59,19 @@ where W: io::Write
     /// Returns the number of bytes written.
     pub fn write_checksum(self) -> io::Result<usize> {
         let mut w = self.inner;
-        let crc = self.hasher.finalize();
-        w.write_u64::<BigEndian>(crc as u64)?;
+        let crc = self.hasher.finish();
+        w.write_u64::<BigEndian>(crc)?;
         Ok(8)
     }
 }
 
-impl<W> io::Write for ChecksumWriter<W>
-where W: io::Write
+impl<C, W> io::Write for ChecksumWriter<C, W>
+where
+    C: Config,
+    W: io::Write,
 {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.hasher.update(buf);
+        self.hasher.write(buf);
         self.inner.write(buf)
     }
 
@@ -70,10 +80,14 @@ where W: io::Write
     }
 }
 
+#[cfg(feature = "crc32fast")]
 #[cfg(test)]
 #[allow(clippy::redundant_clone)]
-mod tests {
+mod tests_crc32fast {
     use std::io::Write;
+
+    use crate::config::Config;
+    use crate::config::Crc32fast;
 
     #[test]
     fn test_checksum_writer() -> anyhow::Result<()> {
@@ -81,17 +95,17 @@ mod tests {
 
         // empty buffer
         {
-            let w = super::ChecksumWriter::new(&mut b);
+            let w = Crc32fast::new_writer(&mut b);
             let crc = w.finalize_checksum();
 
-            assert_eq!(crc32fast::hash(b""), crc);
+            assert_eq!(crc32fast::hash(b"") as u64, crc);
         }
 
         // write something
         {
             let mut n = 0;
 
-            let mut w = super::ChecksumWriter::new(&mut b);
+            let mut w = Crc32fast::new_writer(&mut b);
 
             n += w.write(b"foo")?;
             n += w.write(b"bar")?;
@@ -99,18 +113,19 @@ mod tests {
 
             let crc = w.finalize_checksum();
 
-            assert_eq!(crc32fast::hash(b"foobar"), crc);
+            assert_eq!(crc32fast::hash(b"foobar") as u64, crc);
             assert_eq!(b"foobar", b.as_slice());
         }
 
         Ok(())
     }
+
     #[test]
     fn test_checksum_writer_finalize_to_inner() -> anyhow::Result<()> {
         let mut b = Vec::new();
 
         let mut n = 0;
-        let mut w = super::ChecksumWriter::new(&mut b);
+        let mut w = Crc32fast::new_writer(&mut b);
         n += w.write(b"foo")?;
         n += w.write(b"bar")?;
         n += w.write_checksum()?;
@@ -118,6 +133,37 @@ mod tests {
         assert_eq!(n, 14);
         assert_eq!(
             vec![102, 111, 111, 98, 97, 114, 0, 0, 0, 0, 158, 246, 31, 149],
+            b
+        );
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "crc64fast-nvme")]
+#[cfg(test)]
+#[allow(clippy::redundant_clone)]
+mod tests_crc64fast_nvme {
+    use std::io::Write;
+
+    use crate::config::Config;
+    use crate::config::Crc64fastNvme;
+
+    #[test]
+    fn test_checksum_writer_crc64fast_nvme() -> anyhow::Result<()> {
+        let mut b = Vec::new();
+
+        let mut n = 0;
+        let mut w = Crc64fastNvme::new_writer(&mut b);
+        n += w.write(b"foo")?;
+        n += w.write_checksum()?;
+
+        assert_eq!(n, 11);
+        assert_eq!(
+            vec![
+                102, 111, 111, //
+                228, 237, 247, 14, 102, 174, 13, 2
+            ],
             b
         );
 

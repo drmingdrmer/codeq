@@ -45,9 +45,12 @@
 //! # Examples
 //!
 //! Basic encoding and decoding:
-//! ```
+#![cfg_attr(not(feature = "crc32fast"), doc = "```ignore")]
+#![cfg_attr(feature = "crc32fast", doc = "```rust")]
 //! use codeq::{Codec, Decode, Encode, WithChecksum};
 //! # use std::io;
+//!
+//! use codeq::config::Crc32fast;
 //!
 //! #[derive(Debug, Clone, PartialEq)]
 //! struct Record {
@@ -74,7 +77,7 @@
 //!
 //! // Add checksum protection
 //! let record = Record { id: 1, data: vec![1, 2, 3] };
-//! let protected = WithChecksum::new(&record);
+//! let protected = WithChecksum::<Crc32fast,_>::new(&record);
 //!
 //! let mut buf = Vec::new();
 //! protected.encode(&mut buf).unwrap();
@@ -87,7 +90,7 @@
 //! let decoded = Record::decode(&mut buf.as_slice()).unwrap();
 //! assert_eq!(record, decoded);
 //! ```
-//!
+//! 
 //! [`Codec`]: crate::Codec
 //! [`Encode`]: crate::Encode
 //! [`Decode`]: crate::Decode
@@ -114,6 +117,7 @@ mod segment;
 mod span;
 mod with_checksum;
 
+pub mod config;
 pub mod error_context_ext;
 pub mod testing;
 

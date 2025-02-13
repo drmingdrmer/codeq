@@ -1,25 +1,33 @@
 use std::io::Error;
 use std::io::Read;
 use std::io::Write;
+use std::marker::PhantomData;
 
-use crate::checksum_reader::ChecksumReader;
-use crate::checksum_writer::ChecksumWriter;
 use crate::codec::Decode;
 use crate::codec::Encode;
+use crate::config::Config;
 use crate::fixed_size::FixedSize;
 
 /// A wrapper that appends a CRC32C checksum to the encoded data.
 ///
-/// An 8-byte checksum is appended to the end of the encoded data.
-/// - When encoding, the checksum is appended to the data after the inner `T` is encoded.
-/// - When decoding, the checksum is verified against the decoded data after the inner `T` is
-///   decoded, and an error is returned if they do not match.
+/// When data is encoded:
+/// 1. The inner data is encoded first
+/// 2. A checksum of the encoded data is calculated and appended
+///
+/// When data is decoded:
+/// 1. The inner data is decoded first
+/// 2. The checksum is verified against the decoded data, and an error is returned if they do not
+///    match.
+///
+/// The generic parameter `C` specifies the checksum configuration to use for protecting the data.
 ///
 /// Example:
-/// ```rust
+#[cfg_attr(not(feature = "crc32fast"), doc = "```ignore")]
+#[cfg_attr(feature = "crc32fast", doc = "```rust")]
 /// # use codeq::{Encode, WithChecksum};
+/// use codeq::config::Crc32fast;
 ///
-/// let wc = WithChecksum::<u64>::new(5);
+/// let wc = WithChecksum::<Crc32fast, u64>::new(5);
 /// let mut b = Vec::new();
 /// let n = wc.encode(&mut b).unwrap();
 /// assert_eq!(n, 16);
@@ -34,14 +42,22 @@ use crate::fixed_size::FixedSize;
 #[derive(Debug)]
 #[derive(Clone)]
 #[derive(PartialEq, Eq)]
-pub struct WithChecksum<T> {
+pub struct WithChecksum<C, T>
+where C: Config
+{
     pub(crate) data: T,
+    _p: PhantomData<C>,
 }
 
-impl<T> WithChecksum<T> {
+impl<C, T> WithChecksum<C, T>
+where C: Config
+{
     /// Creates a new wrapper around the given data.
     pub fn new(data: T) -> Self {
-        Self { data }
+        Self {
+            data,
+            _p: Default::default(),
+        }
     }
 
     /// Unwraps and returns the inner data
@@ -50,18 +66,24 @@ impl<T> WithChecksum<T> {
     }
 }
 
-impl<T: FixedSize> FixedSize for WithChecksum<T> {
+impl<C, T> FixedSize for WithChecksum<C, T>
+where
+    C: Config,
+    T: FixedSize,
+{
     fn encoded_size() -> usize {
         T::encoded_size() + 8
     }
 }
 
-impl<T> Encode for WithChecksum<T>
-where T: Encode
+impl<C, T> Encode for WithChecksum<C, T>
+where
+    C: Config,
+    T: Encode,
 {
     fn encode<W: Write>(&self, mut w: W) -> Result<usize, Error> {
         let mut n = 0;
-        let mut cw = ChecksumWriter::new(&mut w);
+        let mut cw = C::new_writer(&mut w);
 
         n += self.data.encode(&mut cw)?;
         n += cw.write_checksum()?;
@@ -70,30 +92,37 @@ where T: Encode
     }
 }
 
-impl<T> Decode for WithChecksum<T>
-where T: Decode
+impl<C, T> Decode for WithChecksum<C, T>
+where
+    C: Config,
+    T: Decode,
 {
     fn decode<R: Read>(r: R) -> Result<Self, Error> {
-        let mut cr = ChecksumReader::new(r);
+        let mut cr = C::new_reader(r);
 
         let data = T::decode(&mut cr)?;
         cr.verify_checksum(|| "WithChecksum::decode()")?;
 
-        let meta = Self { data };
+        let meta = Self {
+            data,
+            _p: Default::default(),
+        };
 
         Ok(meta)
     }
 }
 
+#[cfg(feature = "crc32fast")]
 #[cfg(test)]
-mod tests {
+mod tests_crc32fast {
     use crate::codec::Encode;
+    use crate::config::Config;
+    use crate::config::Crc32fast;
     use crate::testing::test_codec;
-    use crate::with_checksum::WithChecksum;
 
     #[test]
     fn test_with_checksum_codec() -> anyhow::Result<()> {
-        let wc = WithChecksum::<u64>::new(5);
+        let wc = Crc32fast::wrap(5u64);
         let mut b = Vec::new();
         let n = wc.encode(&mut b)?;
         assert_eq!(n, b.len());

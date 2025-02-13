@@ -7,8 +7,7 @@ use byteorder::BigEndian;
 use byteorder::ReadBytesExt;
 use byteorder::WriteBytesExt;
 
-use crate::ChecksumReader;
-use crate::ChecksumWriter;
+use crate::config::Config;
 use crate::Decode;
 use crate::Encode;
 use crate::FixedSize;
@@ -22,23 +21,27 @@ use crate::Span;
 /// - An offset: starting position in bytes
 /// - A size: length in bytes
 ///
-/// The generic parameter `T` can be used to associate additional type information
-/// with the segment without affecting its binary representation.
+/// The generic parameter `C` specifies the checksum configuration to use for protecting the segment
+/// data.
 #[derive(Debug, Clone, Copy)]
 #[derive(Default)]
 #[derive(PartialEq, Eq)]
 #[derive(serde::Serialize, serde::Deserialize)]
-pub struct Segment<T = ()> {
+pub struct Segment<C>
+where C: Config
+{
     /// Starting position of the segment in bytes
     pub offset: u64,
 
     /// Length of the segment in bytes
     pub size: u64,
 
-    _p: PhantomData<T>,
+    _p: PhantomData<C>,
 }
 
-impl<T> Segment<T> {
+impl<C> Segment<C>
+where C: Config
+{
     /// Creates a new segment with the specified offset and size.
     ///
     /// # Arguments
@@ -53,7 +56,9 @@ impl<T> Segment<T> {
     }
 }
 
-impl<T> Span for Segment<T> {
+impl<C> Span for Segment<C>
+where C: Config
+{
     fn offset(&self) -> Offset {
         Offset(self.offset)
     }
@@ -63,7 +68,9 @@ impl<T> Span for Segment<T> {
     }
 }
 
-impl FixedSize for Segment {
+impl<C> FixedSize for Segment<C>
+where C: Config
+{
     /// Returns the fixed size of an encoded segment (24 bytes):
     /// - 8 bytes for offset
     /// - 8 bytes for size
@@ -73,11 +80,13 @@ impl FixedSize for Segment {
     }
 }
 
-impl Encode for Segment {
+impl<C> Encode for Segment<C>
+where C: Config
+{
     fn encode<W: Write>(&self, mut w: W) -> Result<usize, Error> {
         let mut n = 0;
 
-        let mut cw = ChecksumWriter::new(&mut w);
+        let mut cw = C::new_writer(&mut w);
 
         cw.write_u64::<BigEndian>(self.offset)?;
         n += 8;
@@ -91,9 +100,11 @@ impl Encode for Segment {
     }
 }
 
-impl Decode for Segment {
+impl<C> Decode for Segment<C>
+where C: Config
+{
     fn decode<R: Read>(mut r: R) -> Result<Self, Error> {
-        let mut cr = ChecksumReader::new(&mut r);
+        let mut cr = C::new_reader(&mut r);
 
         let offset = cr.read_u64::<BigEndian>()?;
         let size = cr.read_u64::<BigEndian>()?;
@@ -108,23 +119,44 @@ impl Decode for Segment {
     }
 }
 
+#[cfg(feature = "crc32fast")]
 #[cfg(test)]
-mod tests {
-    use crate::segment::Segment;
+mod tests_crc32fast {
+    use crate::config::Config;
+    use crate::config::Crc32fast;
     use crate::testing::test_codec;
 
     #[test]
     fn test_segment_codec() -> anyhow::Result<()> {
-        let s = Segment {
-            offset: 5,
-            size: 10,
-            _p: Default::default(),
-        };
+        let s = Crc32fast::segment(5, 10);
 
         let b = vec![
             0, 0, 0, 0, 0, 0, 0, 5, // offset
             0, 0, 0, 0, 0, 0, 0, 10, // size
             0, 0, 0, 0, 70, 249, 231, 4, // checksum
+        ];
+
+        test_codec(&b, &s)?;
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "crc64fast-nvme")]
+#[cfg(test)]
+mod tests_crc64fast_nvme {
+    use crate::config::Config;
+    use crate::config::Crc64fastNvme;
+    use crate::testing::test_codec;
+
+    #[test]
+    fn test_segment_codec() -> anyhow::Result<()> {
+        let s = Crc64fastNvme::segment(5, 10);
+
+        let b = vec![
+            0, 0, 0, 0, 0, 0, 0, 5, // offset
+            0, 0, 0, 0, 0, 0, 0, 10, // size
+            246, 234, 165, 215, 19, 166, 38, 32, // checksum
         ];
 
         test_codec(&b, &s)?;
