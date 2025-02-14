@@ -5,7 +5,7 @@ use std::io;
 use byteorder::BigEndian;
 use byteorder::ReadBytesExt;
 
-use crate::config::Config;
+use crate::config::CodeqConfig;
 
 /// A reader wrapper that calculates CRC32 checksum while reading data.
 ///
@@ -14,7 +14,7 @@ use crate::config::Config;
 /// - Retrieved using [`finalize_checksum()`](Self::finalize_checksum)
 /// - Verified against an expected value using [`verify_checksum()`](Self::verify_checksum)
 pub struct ChecksumReader<C, R>
-where C: Config
+where C: CodeqConfig
 {
     hasher: C::Hasher,
     inner: R,
@@ -22,7 +22,7 @@ where C: Config
 
 impl<C, R> ChecksumReader<C, R>
 where
-    C: Config,
+    C: CodeqConfig,
     R: io::Read,
 {
     /// Creates a new `ChecksumReader` wrapping the provided reader.
@@ -72,7 +72,7 @@ where
 
 impl<C, R> io::Read for ChecksumReader<C, R>
 where
-    C: Config,
+    C: CodeqConfig,
     R: io::Read,
 {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
@@ -91,7 +91,7 @@ mod tests_crc32fast {
     use std::io::Read;
     use std::io::Write;
 
-    use crate::config::Config;
+    use crate::config::CodeqConfig;
     use crate::config::Crc32fast;
 
     #[test]
@@ -150,7 +150,7 @@ mod tests_crc64fast_nvme {
     use std::io::Read;
     use std::io::Write;
 
-    use crate::config::Config;
+    use crate::config::CodeqConfig;
     use crate::config::Crc64fastNvme;
 
     #[test]

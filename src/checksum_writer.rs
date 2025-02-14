@@ -4,7 +4,7 @@ use std::io;
 use byteorder::BigEndian;
 use byteorder::WriteBytesExt;
 
-use crate::config::Config;
+use crate::config::CodeqConfig;
 
 /// A writer that calculates CRC32 checksum while writing data.
 ///
@@ -26,7 +26,7 @@ use crate::config::Config;
 /// assert_eq!(checksum, crc32fast::hash(b"hello") as u64);
 /// ```
 pub struct ChecksumWriter<C, W>
-where C: Config
+where C: CodeqConfig
 {
     hasher: C::Hasher,
     inner: W,
@@ -34,7 +34,7 @@ where C: Config
 
 impl<C, W> ChecksumWriter<C, W>
 where
-    C: Config,
+    C: CodeqConfig,
     W: io::Write,
 {
     /// Create a new [`ChecksumWriter`] that wraps the provided writer.
@@ -67,7 +67,7 @@ where
 
 impl<C, W> io::Write for ChecksumWriter<C, W>
 where
-    C: Config,
+    C: CodeqConfig,
     W: io::Write,
 {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
@@ -86,7 +86,7 @@ where
 mod tests_crc32fast {
     use std::io::Write;
 
-    use crate::config::Config;
+    use crate::config::CodeqConfig;
     use crate::config::Crc32fast;
 
     #[test]
@@ -146,7 +146,7 @@ mod tests_crc32fast {
 mod tests_crc64fast_nvme {
     use std::io::Write;
 
-    use crate::config::Config;
+    use crate::config::CodeqConfig;
     use crate::config::Crc64fastNvme;
 
     #[test]

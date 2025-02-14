@@ -7,7 +7,7 @@ use byteorder::BigEndian;
 use byteorder::ReadBytesExt;
 use byteorder::WriteBytesExt;
 
-use crate::config::Config;
+use crate::config::CodeqConfig;
 use crate::Decode;
 use crate::Encode;
 use crate::FixedSize;
@@ -28,7 +28,7 @@ use crate::Span;
 #[derive(PartialEq, Eq)]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct Segment<C>
-where C: Config
+where C: CodeqConfig
 {
     /// Starting position of the segment in bytes
     pub offset: u64,
@@ -40,7 +40,7 @@ where C: Config
 }
 
 impl<C> Segment<C>
-where C: Config
+where C: CodeqConfig
 {
     /// Creates a new segment with the specified offset and size.
     ///
@@ -57,7 +57,7 @@ where C: Config
 }
 
 impl<C> Span for Segment<C>
-where C: Config
+where C: CodeqConfig
 {
     fn offset(&self) -> Offset {
         Offset(self.offset)
@@ -69,7 +69,7 @@ where C: Config
 }
 
 impl<C> FixedSize for Segment<C>
-where C: Config
+where C: CodeqConfig
 {
     /// Returns the fixed size of an encoded segment (24 bytes):
     /// - 8 bytes for offset
@@ -81,7 +81,7 @@ where C: Config
 }
 
 impl<C> Encode for Segment<C>
-where C: Config
+where C: CodeqConfig
 {
     fn encode<W: Write>(&self, mut w: W) -> Result<usize, Error> {
         let mut n = 0;
@@ -101,7 +101,7 @@ where C: Config
 }
 
 impl<C> Decode for Segment<C>
-where C: Config
+where C: CodeqConfig
 {
     fn decode<R: Read>(mut r: R) -> Result<Self, Error> {
         let mut cr = C::new_reader(&mut r);
@@ -122,7 +122,7 @@ where C: Config
 #[cfg(feature = "crc32fast")]
 #[cfg(test)]
 mod tests_crc32fast {
-    use crate::config::Config;
+    use crate::config::CodeqConfig;
     use crate::config::Crc32fast;
     use crate::testing::test_codec;
 
@@ -145,7 +145,7 @@ mod tests_crc32fast {
 #[cfg(feature = "crc64fast-nvme")]
 #[cfg(test)]
 mod tests_crc64fast_nvme {
-    use crate::config::Config;
+    use crate::config::CodeqConfig;
     use crate::config::Crc64fastNvme;
     use crate::testing::test_codec;
 

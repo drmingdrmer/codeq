@@ -1,6 +1,8 @@
 //! Configuration for checksum calculation and verification.
 
 use core::hash::Hasher;
+use std::fmt::Debug;
+use std::hash::Hash;
 use std::io;
 
 use crate::ChecksumReader;
@@ -22,7 +24,7 @@ use crate::WithChecksum;
 #[cfg_attr(not(feature = "crc32fast"), doc = "```ignore")]
 #[cfg_attr(feature = "crc32fast", doc = "```rust")]
 /// use codeq::config::Crc32fast;
-/// # use codeq::config::Config;
+/// # use codeq::config::CodeqConfig;
 /// # use std::io::Write;
 ///
 /// let mut writer = Crc32fast::new_writer(Vec::new());
@@ -31,18 +33,22 @@ use crate::WithChecksum;
 /// 
 /// Custom implementation:
 /// ```
-/// use codeq::config::Config;
+/// use codeq::config::CodeqConfig;
 ///
+/// #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// struct CustomConfig;
-/// impl Config for CustomConfig {
+/// impl CodeqConfig for CustomConfig {
 ///     type Hasher = std::collections::hash_map::DefaultHasher;
 /// }
 /// ```
 /// 
 /// Note: Data encoded with one configuration cannot be decoded with a different configuration.
 /// For example, data encoded with CRC32 cannot be decoded with CRC64, and vice versa.
-pub trait Config
-where Self: Sized
+///
+/// Standard bounds (`Debug`, `Clone`, `Default`, etc.) required for use as a generic parameter
+/// in types like `WithChecksum<C,T>` and `Segment<C>` throughout the codebase.
+pub trait CodeqConfig
+where Self: Debug + Clone + Copy + Default + PartialEq + Eq + PartialOrd + Ord + Hash + Sized
 {
     /// The hasher type used for checksum calculation.
     type Hasher: Hasher + Default;
@@ -77,12 +83,16 @@ where Self: Sized
 
 #[cfg(feature = "crc32fast")]
 pub mod crc32fast_impl {
-    use super::Config;
+    use super::CodeqConfig;
 
-    #[derive(Debug, PartialEq, Eq)]
+    /// CRC32 checksum implementation.
+    ///
+    /// Derives standard traits to allow this type to be used as a generic type parameter,
+    /// when the containing type requires these bounds.
+    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct Crc32fast;
 
-    impl Config for Crc32fast {
+    impl CodeqConfig for Crc32fast {
         type Hasher = crc32fast::Hasher;
     }
 }
@@ -92,7 +102,7 @@ pub use crc32fast_impl::Crc32fast;
 
 #[cfg(feature = "crc64fast-nvme")]
 mod crc64fast_nvme_impl {
-    use crate::config::Config;
+    use crate::config::CodeqConfig;
 
     #[derive(Default, Clone)]
     pub struct Crc64fastNvmeHasher(crc64fast_nvme::Digest);
@@ -107,10 +117,14 @@ mod crc64fast_nvme_impl {
         }
     }
 
-    #[derive(Debug, PartialEq, Eq)]
+    /// CRC64-NVME checksum implementation.
+    ///
+    /// Derives standard traits to allow this type to be used as a generic type parameter,
+    /// when the containing type requires these bounds.
+    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct Crc64fastNvme;
 
-    impl Config for Crc64fastNvme {
+    impl CodeqConfig for Crc64fastNvme {
         type Hasher = Crc64fastNvmeHasher;
     }
 }

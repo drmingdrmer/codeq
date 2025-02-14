@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 
 use crate::codec::Decode;
 use crate::codec::Encode;
-use crate::config::Config;
+use crate::config::CodeqConfig;
 use crate::fixed_size::FixedSize;
 
 /// A wrapper that appends a CRC32C checksum to the encoded data.
@@ -43,14 +43,14 @@ use crate::fixed_size::FixedSize;
 #[derive(Clone)]
 #[derive(PartialEq, Eq)]
 pub struct WithChecksum<C, T>
-where C: Config
+where C: CodeqConfig
 {
     pub(crate) data: T,
     _p: PhantomData<C>,
 }
 
 impl<C, T> WithChecksum<C, T>
-where C: Config
+where C: CodeqConfig
 {
     /// Creates a new wrapper around the given data.
     pub fn new(data: T) -> Self {
@@ -68,7 +68,7 @@ where C: Config
 
 impl<C, T> FixedSize for WithChecksum<C, T>
 where
-    C: Config,
+    C: CodeqConfig,
     T: FixedSize,
 {
     fn encoded_size() -> usize {
@@ -78,7 +78,7 @@ where
 
 impl<C, T> Encode for WithChecksum<C, T>
 where
-    C: Config,
+    C: CodeqConfig,
     T: Encode,
 {
     fn encode<W: Write>(&self, mut w: W) -> Result<usize, Error> {
@@ -94,7 +94,7 @@ where
 
 impl<C, T> Decode for WithChecksum<C, T>
 where
-    C: Config,
+    C: CodeqConfig,
     T: Decode,
 {
     fn decode<R: Read>(r: R) -> Result<Self, Error> {
@@ -116,7 +116,7 @@ where
 #[cfg(test)]
 mod tests_crc32fast {
     use crate::codec::Encode;
-    use crate::config::Config;
+    use crate::config::CodeqConfig;
     use crate::config::Crc32fast;
     use crate::testing::test_codec;
 
