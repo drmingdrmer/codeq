@@ -1,28 +1,13 @@
 //! A fully customized encode/decode library.
 //!
-//! with special focus on:
-//! - Data integrity through checksums.
-//! - Application defined backward compatibility.
+//! **Differences from serde**: This crate focuses on a single, application defined binary format,
+//! built-in checksum support, simple encoding/decoding without intermediate formats,
+//! and application defined compatibility.
 //!
-//! # Differences from serde
-//!
-//! While serde is a general-purpose serialization framework, this crate is specialized for:
-//!
-//! 1. **Single Format**: Only supports a single, application defined binary format.
-//! 1. **Data Integrity**: Built-in checksum support for detecting corruption.
-//! 1. **Simple Implementation**: Direct encoding/decoding without intermediate formats.
-//! 1. **Backward Compatibility**: Application defined backward compatibility.
-//!
-//! Choose **this crate** when you need:
-//! - Efficient customized binary serialization with checksums.
-//! - Direct control over the binary format.
-//! - Simple implementation without format abstraction.
-//! - Data format evolves over time.
-//!
-//! Use **serde** when you need:
-//! - Multiple format support (JSON, YAML, etc.)
-//! - Derive macros for automatic implementation
-//! - Automatically generated code for complex data structure serialization
+//! Choose **this crate** when you need customized and simple binary serialization with checksums,
+//! or when data format evolves over time.
+//! Use **serde** when you need: multiple format support (JSON, YAML, etc.),
+//! or derive macros for automatic implementation.
 //!
 //! # Core Traits
 //!
@@ -30,17 +15,14 @@
 //! - [`FixedSize`]: For types with known encoded size
 //! - [`Span`]: For types representing a region in a file/buffer
 //!
-//! # Key Types
-//!
-//! - [`WithChecksum<T>`]: Wraps data with CRC32 checksum for integrity
-//! - [`Offset`]: Type-safe byte position in a file/buffer
-//! - [`Size`]: Type-safe byte length
-//! - [`Segment<T>`]: Represents a typed region with offset and size
-//!
 //! # Utilities
 //!
 //! - [`ChecksumReader`]/[`ChecksumWriter`]: I/O wrappers that calculate checksums
+//! - [`WithChecksum<T>`]: Wraps data with checksum for integrity
+//! - [`Offset`]: Type-safe byte position in a file/buffer
+//! - [`Size`]: Type-safe byte length
 //! - [`OffsetReader`]/[`OffsetWriter`]: I/O wrappers that track current position
+//! - [`Segment<T>`]: Represents a typed region with offset and size
 //!
 //! # Examples
 //!

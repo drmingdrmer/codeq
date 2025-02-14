@@ -25,6 +25,11 @@ use crate::config::CodeqConfig;
 /// let checksum = writer.finalize_checksum();
 /// assert_eq!(checksum, crc32fast::hash(b"hello") as u64);
 /// ```
+/// 
+/// Create a new writer with [`ChecksumWriter::new`] or [`CodeqConfig::new_writer`], for example:
+/// ```ignore
+/// let writer = Crc32fast::new_writer(Vec::new());
+/// ```
 pub struct ChecksumWriter<C, W>
 where C: CodeqConfig
 {

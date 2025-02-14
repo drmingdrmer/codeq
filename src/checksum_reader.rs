@@ -13,6 +13,35 @@ use crate::config::CodeqConfig;
 /// a CRC32 checksum of all data read through it. The checksum can be either:
 /// - Retrieved using [`finalize_checksum()`](Self::finalize_checksum)
 /// - Verified against an expected value using [`verify_checksum()`](Self::verify_checksum)
+///
+/// Example:
+#[cfg_attr(not(feature = "crc32fast"), doc = "```ignore")]
+#[cfg_attr(feature = "crc32fast", doc = "```rust")]
+/// # use std::io::Write;
+/// # use std::io::Read;
+/// # use codeq::config::CodeqConfig;
+/// use codeq::ChecksumWriter;
+/// use codeq::ChecksumReader;
+/// use codeq::config::Crc32fast;
+///
+/// // Build a buffer with a checksum
+/// let mut b = Vec::new();
+/// let mut w = Crc32fast::new_writer(&mut b);
+/// w.write(b"foo").unwrap();
+/// w.write_checksum().unwrap();
+///
+/// // Read the buffer and verify the checksum
+/// let mut r = Crc32fast::new_reader(&b[..]);
+/// let mut read_buf = [0u8; 3];
+/// r.read_exact(&mut read_buf).unwrap();
+/// let crc = r.finalize_checksum();
+/// assert_eq!(crc32fast::hash(b"foo") as u64, crc);
+/// ```
+/// 
+/// Create a new reader with [`ChecksumReader::new`] or [`CodeqConfig::new_reader`], for example:
+/// ```ignore
+/// let reader = Crc32fast::new_reader(Vec::new());
+/// ```
 pub struct ChecksumReader<C, R>
 where C: CodeqConfig
 {

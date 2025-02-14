@@ -8,16 +8,11 @@ use crate::codec::Encode;
 use crate::config::CodeqConfig;
 use crate::fixed_size::FixedSize;
 
-/// A wrapper that appends a CRC32C checksum to the encoded data.
+/// A wrapper that appends a checksum to the encoded data.
 ///
-/// When data is encoded:
-/// 1. The inner data is encoded first
-/// 2. A checksum of the encoded data is calculated and appended
-///
-/// When data is decoded:
-/// 1. The inner data is decoded first
-/// 2. The checksum is verified against the decoded data, and an error is returned if they do not
-///    match.
+/// During encoding, the inner data is first encoded, then a checksum of the encoded data is
+/// calculated and appended. During decoding, the inner data is first decoded, then the checksum
+/// is verified against the decoded data. If the checksums do not match, an error is returned.
 ///
 /// The generic parameter `C` specifies the checksum configuration to use for protecting the data.
 ///
@@ -38,6 +33,11 @@ use crate::fixed_size::FixedSize;
 ///     ],
 ///     b
 /// );
+/// ```
+/// 
+/// Create a new wrapper with either [`WithChecksum::new`] or [`CodeqConfig::wrap`], for example:
+/// ```ignore
+/// let wc = Crc32fast::wrap(5);
 /// ```
 #[derive(Debug)]
 #[derive(Clone)]
