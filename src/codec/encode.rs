@@ -18,7 +18,18 @@ use std::io::Write;
 /// ```
 pub trait Encode: Sized {
     fn encode<W: io::Write>(&self, w: W) -> Result<usize, io::Error>;
+
+    /// Encodes the value into a new `Vec<u8>`.
+    ///
+    /// This method is sealed and cannot be implemented outside of the crate.
+    fn encode_to_vec(&self) -> Result<Vec<u8>, Error>
+    where Self: crate::sealed::Sealed {
+        let mut buf = Vec::new();
+        self.encode(&mut buf)?;
+        Ok(buf)
+    }
 }
+
 impl<T: Encode> Encode for &T {
     fn encode<W: Write>(&self, w: W) -> Result<usize, Error> {
         (*self).encode(w)
@@ -48,5 +59,11 @@ mod tests {
 
         let n = Encode::encode(&&foo, Vec::new()).unwrap();
         assert_eq!(n, 3);
+    }
+
+    #[test]
+    fn test_encode_to_vec() {
+        let buf = 258u32.encode_to_vec().unwrap();
+        assert_eq!(buf, vec![0, 0, 1, 2]);
     }
 }

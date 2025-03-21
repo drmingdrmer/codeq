@@ -101,6 +101,7 @@ mod with_checksum;
 
 pub mod config;
 pub mod error_context_ext;
+pub(crate) mod sealed;
 pub mod testing;
 
 pub use checksum_reader::ChecksumReader;
