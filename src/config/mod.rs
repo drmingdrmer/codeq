@@ -77,7 +77,7 @@ where Self: Debug + Clone + Copy + Default + PartialEq + Eq + PartialOrd + Ord +
 
     /// Creates a new segment with the given offset and size.
     fn segment(offset: u64, size: u64) -> Segment<Self> {
-        Segment::<Self>::new(offset, size)
+        Segment::<Self>::new(offset, size, Self::default())
     }
 }
 
