@@ -1,7 +1,6 @@
 use std::io::Error;
 use std::io::Read;
 use std::io::Write;
-use std::marker::PhantomData;
 
 use byteorder::BigEndian;
 use byteorder::ReadBytesExt;
@@ -36,7 +35,7 @@ where C: CodeqConfig
     /// Length of the segment in bytes
     pub size: u64,
 
-    _p: PhantomData<C>,
+    pub config: C,
 }
 
 impl<C> Segment<C>
@@ -47,11 +46,11 @@ where C: CodeqConfig
     /// # Arguments
     /// * `offset` - Starting position in bytes
     /// * `size` - Length in bytes
-    pub fn new(offset: u64, size: u64) -> Self {
+    pub fn new(offset: u64, size: u64, config: C) -> Self {
         Self {
             offset,
             size,
-            _p: Default::default(),
+            config,
         }
     }
 }
@@ -114,7 +113,7 @@ where C: CodeqConfig
         Ok(Self {
             offset,
             size,
-            _p: Default::default(),
+            config: C::default(),
         })
     }
 }
