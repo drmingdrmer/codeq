@@ -19,6 +19,11 @@ use std::io::Write;
 pub trait Encode: Sized {
     fn encode<W: io::Write>(&self, w: W) -> Result<usize, io::Error>;
 
+    /// Returns the leading type id when the encoded form starts with one.
+    fn type_id(&self) -> Option<u32> {
+        None
+    }
+
     /// Encodes the value into a new `Vec<u8>`.
     ///
     /// This method is sealed and cannot be implemented outside of the crate.
@@ -34,6 +39,10 @@ impl<T: Encode> Encode for &T {
     fn encode<W: Write>(&self, w: W) -> Result<usize, Error> {
         (*self).encode(w)
     }
+
+    fn type_id(&self) -> Option<u32> {
+        (*self).type_id()
+    }
 }
 
 #[cfg(test)]
@@ -48,6 +57,10 @@ mod tests {
     impl Encode for Foo {
         fn encode<W: Write>(&self, _w: W) -> Result<usize, Error> {
             Ok(3)
+        }
+
+        fn type_id(&self) -> Option<u32> {
+            Some(7)
         }
     }
 
@@ -65,5 +78,19 @@ mod tests {
     fn test_encode_to_vec() {
         let buf = 258u32.encode_to_vec().unwrap();
         assert_eq!(buf, vec![0, 0, 1, 2]);
+    }
+
+    #[test]
+    fn test_type_id_default_none() {
+        assert_eq!(None, 1u32.type_id());
+    }
+
+    #[test]
+    fn test_type_id_ref() {
+        let foo = Foo;
+        let foo_ref = &foo;
+
+        assert_eq!(Some(7), foo.type_id());
+        assert_eq!(Some(7), foo_ref.type_id());
     }
 }
