@@ -7,12 +7,15 @@ use byteorder::ReadBytesExt;
 
 use crate::config::CodeqConfig;
 
+const CHECKSUM_BYTES: usize = size_of::<u64>();
+
 /// A reader wrapper that calculates CRC32 checksum while reading data.
 ///
 /// This reader wraps any type implementing `io::Read` and transparently calculates
 /// a CRC32 checksum of all data read through it. The checksum can be either:
 /// - Retrieved using [`finalize_checksum()`](Self::finalize_checksum)
 /// - Verified against an expected value using [`verify_checksum()`](Self::verify_checksum)
+/// The number of bytes read can be retrieved using [`read_bytes()`](Self::read_bytes).
 ///
 /// Example:
 #[cfg_attr(not(feature = "crc32fast"), doc = "```ignore")]
@@ -47,6 +50,7 @@ where C: CodeqConfig
 {
     hasher: C::Hasher,
     inner: R,
+    read: usize,
 }
 
 impl<C, R> ChecksumReader<C, R>
@@ -59,7 +63,13 @@ where
         Self {
             hasher: C::Hasher::default(),
             inner,
+            read: 0,
         }
+    }
+
+    /// Returns the number of bytes read through this reader.
+    pub fn read_bytes(&self) -> usize {
+        self.read
     }
 
     /// Consumes the reader and returns the calculated CRC32 checksum.
@@ -78,7 +88,7 @@ where
     ///
     /// # Errors
     /// Returns [`io::Error`] with [`io::ErrorKind::InvalidData`] kind if checksums don't match.
-    pub fn verify_checksum<D: fmt::Display>(self, context: impl Fn() -> D) -> io::Result<()> {
+    pub fn verify_checksum<D: fmt::Display>(self, context: impl Fn() -> D) -> io::Result<usize> {
         let mut r = self.inner;
         let actual = self.hasher.finish();
 
@@ -94,7 +104,7 @@ where
                 ),
             ))
         } else {
-            Ok(())
+            Ok(self.read + CHECKSUM_BYTES)
         }
     }
 }
@@ -109,6 +119,7 @@ where
         if read > 0 {
             self.hasher.write(&buf[..read]);
         }
+        self.read += read;
         Ok(read)
     }
 }
@@ -117,6 +128,7 @@ where
 #[cfg(test)]
 #[allow(clippy::redundant_clone)]
 mod tests_crc32fast {
+    use std::io;
     use std::io::Read;
     use std::io::Write;
 
@@ -144,6 +156,7 @@ mod tests_crc32fast {
             let mut r = Crc32fast::new_reader(&b[..]);
             let mut read_buf = [0u8; 6];
             r.read_exact(&mut read_buf)?;
+            assert_eq!(r.read_bytes(), 6);
             let crc = r.finalize_checksum();
             assert_eq!(crc32fast::hash(b"foobar") as u64, crc);
         }
@@ -153,7 +166,7 @@ mod tests_crc32fast {
             let mut r = Crc32fast::new_reader(&b[..]);
             let mut read_buf = [0u8; 6];
             r.read_exact(&mut read_buf)?;
-            r.verify_checksum(|| "")?; // No error
+            assert_eq!(r.verify_checksum(|| "")?, 14);
         }
 
         // Verify against wrong checksum
@@ -167,6 +180,35 @@ mod tests_crc32fast {
             let res = r.verify_checksum(|| ""); // checksum error
             assert!(res.is_err());
         }
+
+        Ok(())
+    }
+
+    struct OneByteReader<R>(R);
+
+    impl<R: Read> Read for OneByteReader<R> {
+        fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+            if buf.is_empty() {
+                return Ok(0);
+            }
+
+            let mut one = [0; 1];
+            let n = self.0.read(&mut one)?;
+            if n == 1 {
+                buf[0] = one[0];
+            }
+            Ok(n)
+        }
+    }
+
+    #[test]
+    fn test_checksum_reader_counts_only_accepted_bytes() -> anyhow::Result<()> {
+        let mut r = Crc32fast::new_reader(OneByteReader(b"foobar".as_slice()));
+        let mut buf = [0; 6];
+
+        assert_eq!(r.read(&mut buf)?, 1);
+        assert_eq!(r.read_bytes(), 1);
+        assert_eq!(r.finalize_checksum(), crc32fast::hash(b"f") as u64);
 
         Ok(())
     }
@@ -212,7 +254,7 @@ mod tests_crc64fast_nvme {
             let mut r = Crc64fastNvme::new_reader(&b[..]);
             let mut read_buf = [0u8; 6];
             r.read_exact(&mut read_buf)?;
-            r.verify_checksum(|| "")?; // No error
+            assert_eq!(r.verify_checksum(|| "")?, 14);
         }
 
         // Verify against wrong checksum

@@ -12,6 +12,7 @@ use crate::config::CodeqConfig;
 /// a CRC32 checksum of all data written through it. The checksum can be either:
 /// - Retrieved using `finalize_checksum()`
 /// - Written to the underlying writer using `write_checksum()`
+/// - Written with `finalize()`, which returns the total bytes written
 ///
 /// Example:
 #[cfg_attr(not(feature = "crc32fast"), doc = "```ignore")]
@@ -35,6 +36,7 @@ where C: CodeqConfig
 {
     hasher: C::Hasher,
     inner: W,
+    written: usize,
 }
 
 impl<C, W> ChecksumWriter<C, W>
@@ -47,6 +49,7 @@ where
         Self {
             hasher: Default::default(),
             inner,
+            written: 0,
         }
     }
 
@@ -68,6 +71,15 @@ where
         w.write_u64::<BigEndian>(crc)?;
         Ok(8)
     }
+
+    /// Append the finalized checksum to the inner writer and return the total
+    /// bytes written, including the checksum.
+    pub fn finalize(self) -> io::Result<usize> {
+        let mut w = self.inner;
+        let crc = self.hasher.finish();
+        w.write_u64::<BigEndian>(crc)?;
+        Ok(self.written + 8)
+    }
 }
 
 impl<C, W> io::Write for ChecksumWriter<C, W>
@@ -76,8 +88,10 @@ where
     W: io::Write,
 {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.hasher.write(buf);
-        self.inner.write(buf)
+        let written = self.inner.write(buf)?;
+        self.hasher.write(&buf[..written]);
+        self.written += written;
+        Ok(written)
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -89,6 +103,7 @@ where
 #[cfg(test)]
 #[allow(clippy::redundant_clone)]
 mod tests_crc32fast {
+    use std::io;
     use std::io::Write;
 
     use crate::config::CodeqConfig;
@@ -140,6 +155,53 @@ mod tests_crc32fast {
             vec![102, 111, 111, 98, 97, 114, 0, 0, 0, 0, 158, 246, 31, 149],
             b
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_checksum_writer_finalize_returns_total_written() -> anyhow::Result<()> {
+        let mut b = Vec::new();
+
+        let mut w = Crc32fast::new_writer(&mut b);
+        w.write_all(b"foobar")?;
+        let n = w.finalize()?;
+
+        assert_eq!(n, 14);
+        assert_eq!(
+            vec![102, 111, 111, 98, 97, 114, 0, 0, 0, 0, 158, 246, 31, 149],
+            b
+        );
+
+        Ok(())
+    }
+
+    struct OneByteWriter<'a>(&'a mut Vec<u8>);
+
+    impl Write for OneByteWriter<'_> {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            if buf.is_empty() {
+                return Ok(0);
+            }
+            self.0.push(buf[0]);
+            Ok(1)
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test_checksum_writer_counts_only_accepted_bytes() -> anyhow::Result<()> {
+        let mut b = Vec::new();
+
+        let mut w = Crc32fast::new_writer(OneByteWriter(&mut b));
+        assert_eq!(w.write(b"foobar")?, 1);
+        assert_eq!(w.finalize()?, 9);
+
+        assert_eq!(b[0], b'f');
+        assert_eq!(&b[1..], &(crc32fast::hash(b"f") as u64).to_be_bytes());
 
         Ok(())
     }
