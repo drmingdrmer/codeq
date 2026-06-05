@@ -1,15 +1,18 @@
 all: test check_all
 
-check_all: lint fmt doc unused_dep typos
+check_all: lint fmt_check doc unused_dep typos
 
 test:
 	cargo test
 
 bench:
-	cargo bench --features bench
+	cargo bench
 
 fmt:
 	cargo fmt
+
+fmt_check:
+	cargo fmt -- --check
 
 fix:
 	cargo fix --allow-staged
@@ -22,7 +25,6 @@ check_missing_doc:
 	RUSTDOCFLAGS="-W missing_docs" cargo doc --all --no-deps
 
 lint:
-	cargo fmt
 	cargo clippy --no-deps --workspace --all-targets                -- -D warnings
 	# Bug: clippy --all-targets reports false warning about unused dep in
 	# `[dev-dependencies]`:
@@ -35,10 +37,12 @@ unused_dep:
 
 typos:
 	# cargo install typos-cli
-	typos --write-changes rotbl/
-	# typos
+	typos
+
+fix_typos:
+	typos --write-changes
 
 clean:
 	cargo clean
 
-.PHONY: test fmt lint clean doc guide
+.PHONY: all check_all test bench fmt fmt_check fix doc check_missing_doc lint unused_dep typos fix_typos clean
