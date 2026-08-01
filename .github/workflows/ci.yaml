@@ -137,7 +137,7 @@ jobs:
 
 
       - shell: bash
-        run: cargo install cargo-audit
+        run: cargo install cargo-audit --locked
 
 
       - name: Audit dependencies
