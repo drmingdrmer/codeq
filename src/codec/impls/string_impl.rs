@@ -1,7 +1,6 @@
 use std::io;
 
 use byteorder::BigEndian;
-use byteorder::ReadBytesExt;
 use byteorder::WriteBytesExt;
 
 use crate::Decode;
@@ -23,10 +22,8 @@ impl Encode for String {
 }
 
 impl Decode for String {
-    fn decode<R: io::Read>(mut r: R) -> Result<Self, io::Error> {
-        let len = r.read_u32::<BigEndian>()? as usize;
-        let mut buf = vec![0; len];
-        r.read_exact(&mut buf)?;
+    fn decode<R: io::Read>(r: R) -> Result<Self, io::Error> {
+        let buf = Vec::<u8>::decode(r)?;
         String::from_utf8(buf).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
     }
 }
@@ -94,6 +91,28 @@ mod tests {
                 "&str and String must encode identically: {s:?}"
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn test_string_decode_invalid_utf8() {
+        let result = String::decode(b"\x00\x00\x00\x01\xff".as_slice());
+        let error = result.unwrap_err();
+        let kind = error.kind();
+        assert_eq!(kind, io::ErrorKind::InvalidData);
+    }
+
+    #[test]
+    fn test_string_decode_large_leaves_trailing_bytes() -> Result<(), io::Error> {
+        let expected = "你好".repeat(4096);
+        let mut encoded = Vec::new();
+        expected.encode(&mut encoded)?;
+        encoded.extend_from_slice(b"tail");
+
+        let mut reader = encoded.as_slice();
+        let actual = String::decode(&mut reader)?;
+        assert_eq!(actual, expected);
+        assert_eq!(reader, b"tail");
         Ok(())
     }
 
